@@ -59,10 +59,22 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-accent: var(--accent-color);
 }
 
 :root {
   --radius: 0.625rem;
+  --bg: #0e0e10;
+  --fg: #ffffff;
+  --fg-muted: oklch(0.72 0.01 260);
+  --panel: #16161a;
+  --line: #26262c;
+  --accent-color: #1f9aa8;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
