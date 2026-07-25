@@ -294,36 +294,68 @@ function Index() {
           {statuses[4] !== "idle" && (
             <StageCard n={4} title="Contact Finder" status={statuses[4]} error={errors[4]} onRegenerate={() => regenerate(4)} regenDisabled={running || !ranked.length}>
               <div className="space-y-4">
-                {groupBy(contacts, (c) => c.company).map(([company, list]) => (
-                  <div key={company} className="rounded-md border border-line p-3">
-                    <div className="mb-2 font-semibold">{company}</div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {list.map((c, i) => (
-                        <div
-                          key={i}
-                          className="rounded border border-line/70 p-2 text-sm"
-                        >
-                          <div className="text-xs text-fg-muted">{c.persona}</div>
-                          <div className="font-medium">
-                            {c.verified && c.name ? (
-                              c.name
-                            ) : (
-                              <span className="text-accent">verify-live</span>
-                            )}
+                {groupBy(contacts, (c) => c.company).map(([company, list]) => {
+                  const verified = list.filter((c) => c.verified);
+                  const personas = list.filter((c) => !c.verified);
+                  return (
+                    <div key={company} className="rounded-md border border-line p-3">
+                      <div className="mb-3 font-semibold">{company}</div>
+
+                      {verified.length > 0 && (
+                        <div className="mb-3">
+                          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-fg-muted">
+                            Verified contacts
                           </div>
-                          <a
-                            href={c.xray_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-1 inline-block text-xs text-accent underline underline-offset-2 hover:opacity-80"
-                          >
-                            Find on LinkedIn →
-                          </a>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {verified.map((c, i) => (
+                              <div key={i} className="rounded border border-accent/40 bg-accent/5 p-2 text-sm">
+                                <div className="mb-1 inline-block rounded-sm border border-accent/50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-accent">
+                                  verified · public source
+                                </div>
+                                <div className="font-medium">{c.name}</div>
+                                <div className="text-xs text-fg-muted">{c.title ?? c.persona}</div>
+                                <a
+                                  href={c.xray_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="mt-1 inline-block text-xs text-accent underline underline-offset-2 hover:opacity-80"
+                                >
+                                  Find on LinkedIn →
+                                </a>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
+                      )}
+
+                      {personas.length > 0 && (
+                        <div>
+                          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-fg-muted">
+                            Additional targets · verify-live
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {personas.map((c, i) => (
+                              <div key={i} className="rounded border border-line/70 p-2 text-sm">
+                                <div className="text-xs text-fg-muted">{c.persona}</div>
+                                <div className="font-medium">
+                                  <span className="text-accent">verify-live</span>
+                                </div>
+                                <a
+                                  href={c.xray_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="mt-1 inline-block text-xs text-accent underline underline-offset-2 hover:opacity-80"
+                                >
+                                  Find on LinkedIn →
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </StageCard>
           )}
