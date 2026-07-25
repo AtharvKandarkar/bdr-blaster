@@ -139,21 +139,51 @@ Return JSON: { "ranked": [ { "company": string, "score": number, "why_now": stri
 }
 
 // ---------- Agent 4: Contact Finder ----------
-export async function runStage4(brief: Brief, ranked: Ranked[]): Promise<Contact[]> {
-  const system = `${baseSystem}
+// Deterministic — no AI call. Builds LinkedIn X-ray URLs per persona per account,
+// and injects the two verified real Codelco contacts when applicable.
+const PERSONAS = [
+  "Head of Operations",
+  "VP of HSE",
+  "Site / Division Director",
+] as const;
 
-You are AGENT 4 — CONTACT FINDER. For each account, list target personas (Head of Operations, VP HSE, Site/Division Director). Use a verified real name ONLY if present in VERIFIED REAL CONTACTS. Otherwise set "name": null and "verified": false, and provide a Google X-ray search URL of the form:
-https://www.google.com/search?q=site:linkedin.com/in+("PERSONA_A"+OR+"PERSONA_B")+"COMPANY"
-URL-encode spaces as +. NEVER invent a real person's name.`;
-  const user = `${briefBlock(brief)}
+function xrayUrl(persona: string, company: string) {
+  const q = `site:linkedin.com/in ("${persona}") "${company}"`;
+  return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+}
 
-RANKED ACCOUNTS:
-${ranked.map((r) => `- ${r.company}`).join("\n")}
-
-Return JSON: { "contacts": [ { "company": string, "persona": string, "name": string|null, "xray_url": string, "verified": boolean } ] }
-Cover Head of Operations, VP HSE, and Site/Division Director for each company.`;
-  const out = await callStage<{ contacts: Contact[] }>(system, user);
-  return out.contacts;
+export function runStage4(_brief: Brief, ranked: Ranked[]): Contact[] {
+  const contacts: Contact[] = [];
+  for (const r of ranked) {
+    for (const persona of PERSONAS) {
+      contacts.push({
+        company: r.company,
+        persona,
+        name: null,
+        xray_url: xrayUrl(persona, r.company),
+        verified: false,
+      });
+    }
+    if (r.company.toLowerCase().includes("codelco")) {
+      contacts.push(
+        {
+          company: r.company,
+          persona: "CEO (ex-VP Operations)",
+          name: "Jorge Gómez",
+          xray_url: xrayUrl("Jorge Gómez", r.company),
+          verified: true,
+        },
+        {
+          company: r.company,
+          persona: "Acting VP of Operations",
+          name: "Lindor Quiroga",
+          xray_url: xrayUrl("Lindor Quiroga", r.company),
+          verified: true,
+        },
+      );
+    }
+  }
+  return contacts;
 }
 
 // ---------- Agent 5: Outreach Writer ----------
