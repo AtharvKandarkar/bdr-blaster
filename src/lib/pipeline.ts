@@ -60,6 +60,7 @@ export type Contact = {
   name: string | null; // null => verify-live
   xray_url: string;
   verified: boolean;
+  title?: string;
 };
 
 export type Email = {
@@ -152,9 +153,66 @@ function xrayUrl(persona: string, company: string) {
   return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
 }
 
+// Verified named executives sourced from public reporting. Keyed by a
+// substring match on the account company name so ranked variants
+// ("Vale Base Metals", "Antofagasta Minerals plc", etc.) still resolve.
+const VERIFIED_CONTACTS: { match: string; people: { name: string; title: string }[] }[] = [
+  {
+    match: "codelco",
+    people: [
+      { name: "Jorge Gómez", title: "CEO (former VP Operations)" },
+      { name: "Lindor Quiroga", title: "Acting VP Operations" },
+    ],
+  },
+  {
+    match: "sqm",
+    people: [
+      { name: "Ricardo Ramos", title: "CEO" },
+      { name: "Carlos Díaz", title: "CEO, Nova Andino (SQM lithium operations)" },
+    ],
+  },
+  {
+    match: "antofagasta",
+    people: [
+      { name: "Octavio Araneda", title: "Chief Operating Officer (former GM, El Teniente / Codelco)" },
+    ],
+  },
+  {
+    match: "sigma",
+    people: [
+      { name: "Ana Cabral", title: "CEO & Co-Chairperson" },
+      { name: "Brian Talbot", title: "Chief Operating Officer" },
+    ],
+  },
+  {
+    match: "vale",
+    people: [
+      { name: "Shaun Usmar", title: "CEO" },
+      { name: "Grazielle Parenti", title: "EVP Sustainability (Vale)" },
+    ],
+  },
+];
+
+function verifiedFor(company: string) {
+  const c = company.toLowerCase();
+  return VERIFIED_CONTACTS.find((v) => c.includes(v.match))?.people ?? [];
+}
+
 export function runStage4(_brief: Brief, ranked: Ranked[]): Contact[] {
   const contacts: Contact[] = [];
   for (const r of ranked) {
+    // Verified named executives first.
+    for (const p of verifiedFor(r.company)) {
+      contacts.push({
+        company: r.company,
+        persona: p.title,
+        name: p.name,
+        title: p.title,
+        xray_url: xrayUrl(p.name, r.company),
+        verified: true,
+      });
+    }
+    // Then persona search rows (additional targets · verify-live).
     for (const persona of PERSONAS) {
       contacts.push({
         company: r.company,
@@ -163,24 +221,6 @@ export function runStage4(_brief: Brief, ranked: Ranked[]): Contact[] {
         xray_url: xrayUrl(persona, r.company),
         verified: false,
       });
-    }
-    if (r.company.toLowerCase().includes("codelco")) {
-      contacts.push(
-        {
-          company: r.company,
-          persona: "CEO (ex-VP Operations)",
-          name: "Jorge Gómez",
-          xray_url: xrayUrl("Jorge Gómez", r.company),
-          verified: true,
-        },
-        {
-          company: r.company,
-          persona: "Acting VP of Operations",
-          name: "Lindor Quiroga",
-          xray_url: xrayUrl("Lindor Quiroga", r.company),
-          verified: true,
-        },
-      );
     }
   }
   return contacts;
