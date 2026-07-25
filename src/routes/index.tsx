@@ -101,7 +101,7 @@ function Index() {
       setStage(3, "done");
 
       setStage(4, "running");
-      const c = await runStage4(brief, rk);
+      const c = runStage4(brief, rk);
       setContacts(c);
       setStage(4, "done");
 
@@ -114,6 +114,38 @@ function Index() {
       const current = Object.entries(statuses).find(([, s]) => s === "running")?.[0];
       if (current) setStage(Number(current), "error", msg);
       console.error(err);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  // Rerun a single stage without cascading. Downstream stages remain as-is
+  // until the user regenerates them individually.
+  async function regenerate(n: 1 | 2 | 3 | 4 | 5) {
+    if (running) return;
+    setRunning(true);
+    setErrors((prev) => ({ ...prev, [n]: null }));
+    try {
+      setStage(n, "running");
+      if (n === 1) {
+        setAccounts(await runStage1(brief));
+      } else if (n === 2) {
+        if (!accounts.length) throw new Error("Run Stage 1 first.");
+        setResearch(await runStage2(brief, accounts));
+      } else if (n === 3) {
+        if (!research.length) throw new Error("Run Stage 2 first.");
+        setRanked(await runStage3(brief, research));
+      } else if (n === 4) {
+        if (!ranked.length) throw new Error("Run Stage 3 first.");
+        setContacts(runStage4(brief, ranked));
+      } else {
+        if (!research.length || !contacts.length)
+          throw new Error("Run Stages 2 & 4 first.");
+        setEmails(await runStage5(brief, research, contacts));
+      }
+      setStage(n, "done");
+    } catch (err) {
+      setStage(n, "error", err instanceof Error ? err.message : String(err));
     } finally {
       setRunning(false);
     }
@@ -198,7 +230,7 @@ function Index() {
         {/* RESULTS */}
         <div className="space-y-6">
           {statuses[1] !== "idle" && (
-            <StageCard n={1} title="Lookalike Finder" status={statuses[1]} error={errors[1]}>
+            <StageCard n={1} title="Lookalike Finder" status={statuses[1]} error={errors[1]} onRegenerate={() => regenerate(1)} regenDisabled={running}>
               <div className="grid gap-3 sm:grid-cols-2">
                 {accounts.map((a) => (
                   <div key={a.company} className="rounded-md border border-line p-3">
@@ -214,7 +246,7 @@ function Index() {
           )}
 
           {statuses[2] !== "idle" && (
-            <StageCard n={2} title="Account Researcher" status={statuses[2]} error={errors[2]}>
+            <StageCard n={2} title="Account Researcher" status={statuses[2]} error={errors[2]} onRegenerate={() => regenerate(2)} regenDisabled={running || !accounts.length}>
               <div className="space-y-3">
                 {research.map((r) => (
                   <div key={r.company} className="rounded-md border border-line p-3">
@@ -231,7 +263,7 @@ function Index() {
           )}
 
           {statuses[3] !== "idle" && (
-            <StageCard n={3} title="Signal & Fit Ranker" status={statuses[3]} error={errors[3]}>
+            <StageCard n={3} title="Signal & Fit Ranker" status={statuses[3]} error={errors[3]} onRegenerate={() => regenerate(3)} regenDisabled={running || !research.length}>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -260,7 +292,7 @@ function Index() {
           )}
 
           {statuses[4] !== "idle" && (
-            <StageCard n={4} title="Contact Finder" status={statuses[4]} error={errors[4]}>
+            <StageCard n={4} title="Contact Finder" status={statuses[4]} error={errors[4]} onRegenerate={() => regenerate(4)} regenDisabled={running || !ranked.length}>
               <div className="space-y-4">
                 {groupBy(contacts, (c) => c.company).map(([company, list]) => (
                   <div key={company} className="rounded-md border border-line p-3">
@@ -285,7 +317,7 @@ function Index() {
                             rel="noreferrer"
                             className="mt-1 inline-block text-xs text-accent underline underline-offset-2 hover:opacity-80"
                           >
-                            X-ray search →
+                            Find on LinkedIn →
                           </a>
                         </div>
                       ))}
@@ -297,7 +329,7 @@ function Index() {
           )}
 
           {statuses[5] !== "idle" && (
-            <StageCard n={5} title="Outreach Writer" status={statuses[5]} error={errors[5]}>
+            <StageCard n={5} title="Outreach Writer" status={statuses[5]} error={errors[5]} onRegenerate={() => regenerate(5)} regenDisabled={running || !research.length || !contacts.length}>
               <div className="space-y-3">
                 {emails.map((e, i) => (
                   <EmailCard key={i} email={e} />
@@ -353,12 +385,16 @@ function StageCard({
   status,
   error,
   children,
+  onRegenerate,
+  regenDisabled,
 }: {
   n: number;
   title: string;
   status: StageStatus;
   error?: string | null;
   children: React.ReactNode;
+  onRegenerate?: () => void;
+  regenDisabled?: boolean;
 }) {
   return (
     <section className="rounded-lg border border-line bg-panel p-6">
@@ -369,6 +405,15 @@ function StageCard({
         </h3>
         {status === "running" && (
           <span className="text-xs text-fg-muted">Agent {n} running…</span>
+        )}
+        {onRegenerate && (
+          <button
+            onClick={onRegenerate}
+            disabled={regenDisabled}
+            className="ml-auto rounded-md border border-line px-3 py-1 text-xs hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {status === "running" ? "Running…" : "Regenerate"}
+          </button>
         )}
       </div>
       {error ? (
