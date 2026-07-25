@@ -239,7 +239,8 @@ RULES:
 - Reference the specific company's real signal from the research (no {placeholders}).
 - Tie to the persona's role: Ops = uptime/efficiency; HSE = worker safety/zero-exposure; Site/Division Director = site-level rollout.
 - Make the FlytBase safety/autonomy pitch concrete (removing crews from pit-walls, tailings dams, blast zones, remote 24/7 infra).
-- Where it strengthens credibility, reference FlytBase customers: Anglo American (mining peer — strongest), Shell, CSX.
+- LEAD credibility line (use in every email as the primary proof point): "FlytBase already runs autonomous inspection across SQM's 678 km² mine in Chile, delivered with partner Adentu." This is the strongest regional peer proof — surface it early in the body.
+- Use Anglo American as a SECONDARY mining peer reference where it adds weight. Shell / CSX may be mentioned only if additional cross-industry credibility helps.
 - Goal: book a discovery call.
 - Each email must read like a human did their homework. No mail-merge tokens.`;
   const user = `${briefBlock(brief)}
